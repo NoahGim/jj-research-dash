@@ -66,12 +66,12 @@ const SearchSection = ({ dateRange: parentDateRange, onDateRangeChange, selected
     setDisplayChartData(filteredData);
   }, [parentDateRange, fullChartData]);
 
-  const handleHouseTypeChange = async (selectedType) => {
-    setHouseType(selectedType);
+  const handleHouseTypeChange = async (value) => {
+    setHouseType(value);
     
     try {
-      debug('선택된 주택 타입:', selectedType);
-      const data = await fetchPriceChartData(selectedType);
+      debug('선택된 주택 타입:', value);
+      const data = await fetchPriceChartData(value);
       debug('받아온 차트 데이터:', data);
       
       if (!data || data.length === 0) {
@@ -90,6 +90,13 @@ const SearchSection = ({ dateRange: parentDateRange, onDateRangeChange, selected
       console.error('차트 데이터 로드 중 오류 발생:', error);
     }
   };
+
+  // houseType을 실제로 사용하는 코드 추가
+  useEffect(() => {
+    if (houseType) {
+      // houseType에 따른 로직 처리
+    }
+  }, [houseType]);
 
   return (
     <SearchContainer>

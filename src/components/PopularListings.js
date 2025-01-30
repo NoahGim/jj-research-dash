@@ -1,3 +1,5 @@
+import styled from 'styled-components';
+
 const PopularSection = styled.section`
   padding: 4rem 20px;
   background: #f8f9fa;

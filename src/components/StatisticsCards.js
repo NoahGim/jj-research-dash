@@ -40,7 +40,7 @@ function StatisticsCards({ loading, data }) {
     return calculateAverage(ratios);
   };
 
-  const calculateStats = useCallback(() => {
+  const calculateAverages = useCallback(() => {
     if (!data?.length) return null;
 
     return {
@@ -50,9 +50,9 @@ function StatisticsCards({ loading, data }) {
       minSalePrice: Math.min(...data.map(item => item.매매가)),
       jeonseRatio: calculateJeonseRatio(data)
     };
-  }, [data]);
+  }, [data, calculateJeonseRatio]);
 
-  const stats = calculateStats();
+  const stats = calculateAverages();
 
   if (loading) {
     return (
