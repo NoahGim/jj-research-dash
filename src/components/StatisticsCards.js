@@ -30,18 +30,14 @@ function StatisticsCards({ loading, data }) {
     return numbers.reduce((acc, curr) => acc + curr, 0) / numbers.length;
   };
 
-  /**
-   * 전세가율을 계산하는 함수
-   * @param {Array<{매매가: number, 전세가: number}>} data - 계산할 데이터
-   * @returns {number} 평균 전세가율
-   */
-  const calculateJeonseRatio = (data) => {
-    const ratios = data.map(item => (item.전세가 / item.매매가) * 100);
-    return calculateAverage(ratios);
-  };
-
   const calculateAverages = useCallback(() => {
     if (!data?.length) return null;
+
+    // calculateJeonseRatio 함수를 useCallback 내부로 이동
+    const calculateJeonseRatio = (priceData) => {
+      const ratios = priceData.map(item => (item.전세가 / item.매매가) * 100);
+      return calculateAverage(ratios);
+    };
 
     return {
       avgSalePrice: calculateAverage(data.map(item => item.매매가)),
@@ -50,7 +46,7 @@ function StatisticsCards({ loading, data }) {
       minSalePrice: Math.min(...data.map(item => item.매매가)),
       jeonseRatio: calculateJeonseRatio(data)
     };
-  }, [data, calculateJeonseRatio]);
+  }, [data]); // data만 의존성으로 유지
 
   const stats = calculateAverages();
 
