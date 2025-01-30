@@ -33,20 +33,47 @@ function StatisticsCards({ loading, data }) {
   const calculateAverages = useCallback(() => {
     if (!data?.length) return null;
 
-    // calculateJeonseRatio 함수를 useCallback 내부로 이동
+    // 유효한 데이터만 필터링하는 함수
+    const filterValidData = (items, key) => {
+      return items.filter(item => 
+        item[key] !== undefined && 
+        item[key] !== null && 
+        !isNaN(item[key]) && 
+        item[key] > 0
+      );
+    };
+
+    // 전세가율 계산 함수
     const calculateJeonseRatio = (priceData) => {
-      const ratios = priceData.map(item => (item.전세가 / item.매매가) * 100);
+      const validData = priceData.filter(item => 
+        item.매매가 !== undefined && 
+        item.매매가 !== null && 
+        !isNaN(item.매매가) && 
+        item.매매가 > 0 &&
+        item.전세가 !== undefined && 
+        item.전세가 !== null && 
+        !isNaN(item.전세가) && 
+        item.전세가 > 0
+      );
+
+      if (validData.length === 0) return 0;
+
+      const ratios = validData.map(item => (item.전세가 / item.매매가) * 100);
       return calculateAverage(ratios);
     };
 
+    // 유효한 데이터만 필터링
+    const validSaleData = filterValidData(data, '매매가');
+    const validJeonseData = filterValidData(data, '전세가');
+
     return {
-      avgSalePrice: calculateAverage(data.map(item => item.매매가)),
-      avgJeonsePrice: calculateAverage(data.map(item => item.전세가)),
-      maxSalePrice: Math.max(...data.map(item => item.매매가)),
-      minSalePrice: Math.min(...data.map(item => item.매매가)),
+      avgSalePrice: validSaleData.length > 0 ? calculateAverage(validSaleData.map(item => item.매매가)) : 0,
+      avgJeonsePrice: validJeonseData.length > 0 ? calculateAverage(validJeonseData.map(item => item.전세가)) : 0,
+      maxSalePrice: validSaleData.length > 0 ? Math.max(...validSaleData.map(item => item.매매가)) : 0,
+      minSalePrice: validSaleData.length > 0 ? Math.min(...validSaleData.map(item => item.매매가)) : 0,
       jeonseRatio: calculateJeonseRatio(data)
     };
-  }, [data]); // data만 의존성으로 유지
+  }, [data]);
 
   const stats = calculateAverages();
 

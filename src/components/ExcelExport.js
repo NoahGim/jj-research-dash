@@ -40,7 +40,8 @@ function ExcelExport({ apartment, type, dateRange, priceData }) {
     const summaryData = [
       // 헤더 정보
       ['아파트 정보'],
-      ['단지명', apartment.displayName],
+      ['단지명', apartment.apartmentName],
+      ['주소', apartment.address],
       ['평형', `${type.전용면적}㎡`],
       ['조회 기간', `${dayjs(dateRange[0]).format('YYYY-MM-DD')} ~ ${dayjs(dateRange[1]).format('YYYY-MM-DD')}`],
       [], // 빈 줄
@@ -104,7 +105,7 @@ function ExcelExport({ apartment, type, dateRange, priceData }) {
     XLSX.utils.book_append_sheet(wb, chartWs, '차트데이터');
 
     // 파일 이름 생성
-    const fileName = `${apartment.apartmentName || apartment.displayName}_${type.전용면적}㎡_${dayjs().format('YYYYMMDD')}.xlsx`;
+    const fileName = `${apartment.apartmentName}_${type.전용면적}㎡_${dayjs().format('YYYYMMDD')}.xlsx`;
 
     // 엑셀 파일 다운로드
     XLSX.writeFile(wb, fileName);
