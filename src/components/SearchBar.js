@@ -38,23 +38,44 @@ const ScrollableList = styled.div`
   }
 `;
 
-function SearchBar({ onSelect, loading, setLoading }) {
+function SearchBar({ onSelect, onSearch, loading, setLoading }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async () => {
+    onSearch(query);
+    
     setLoading(true);
     setIsSearching(true);
     try {
       const response = await fetchSearchResults(query);
+      
+      if (!response || !Array.isArray(response) || response.length === 0) {
+        setResults([]);
+        return;
+      }
+
       const searchData = response[0];
+      if (!searchData || !searchData.COL_AT_HSCM) {
+        setResults([]);
+        return;
+      }
+
       const dataArray = searchData.COL_AT_HSCM;
-      const formattedResults = dataArray.map(item => ({
-        text: item.text,
-        address: item.addr,
-        displayName: item.textTemp
-      }));
+      if (!Array.isArray(dataArray)) {
+        setResults([]);
+        return;
+      }
+
+      const formattedResults = dataArray
+        .filter(item => item && item.text && item.addr && item.textTemp)
+        .map(item => ({
+          text: item.text,
+          address: item.addr,
+          displayName: item.textTemp
+        }));
+        
       setResults(formattedResults);
     } catch (error) {
       console.error('Error fetching search results:', error);

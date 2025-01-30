@@ -53,6 +53,9 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState(null);
   const [fullChartData, setFullChartData] = useState(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
+  const [chartType, setChartType] = useState('bar');
 
   // 차트 데이터 fetch 함수
   const fetchChartData = useCallback(async () => {
@@ -174,6 +177,20 @@ function App() {
     }
   }, [fullChartData]);
 
+  const handleSearch = (searchTerm) => {
+    // 검색어 업데이트
+    setSearchKeyword(searchTerm);
+    
+    // 모든 상태 초기화
+    setSelectedType(null);
+    setSelectedTypeInfo(null);
+    setDateRange(null);
+    setChartData(null);
+    setFullChartData(null);
+    setSelectedApartment(null);
+    setFilteredData([]);
+  };
+
   return (
     <ConfigProvider locale={ko_KR}>
       <Layout className="layout">
@@ -184,6 +201,7 @@ function App() {
           <ControlPanel>
             <SearchBar 
               onSelect={handleApartmentSelect}
+              onSearch={handleSearch}
               loading={loading}
               setLoading={setLoading}
             />
