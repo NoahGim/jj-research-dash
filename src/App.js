@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Layout, ConfigProvider } from 'antd';
+import styled from 'styled-components';
 import SearchBar from './components/SearchBar';
 import TypeSelector from './components/TypeSelector';
 import DateRangeSelector from './components/DateRangeSelector';
@@ -16,6 +17,32 @@ const { Header, Content } = Layout;
 
 // dayjs 로케일 설정
 dayjs.locale('ko');
+
+// 중앙 정렬을 위한 스타일 컴포넌트 수정
+const CenteredContent = styled(Content)`
+  width: 100%;
+  padding: 24px;
+`;
+
+const CenteredHeader = styled(Header)`
+  text-align: center;
+  width: 100%;
+  
+  h1 {
+    color: white;
+    margin: 0;
+  }
+`;
+
+const ControlPanel = styled.div`
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+`;
 
 function App() {
   const [selectedApartment, setSelectedApartment] = useState(null);
@@ -44,11 +71,11 @@ function App() {
   return (
     <ConfigProvider locale={ko_KR}>
       <Layout className="layout">
-        <Header className="header">
-          <h1>부동산 시세 분석</h1>
-        </Header>
-        <Content className="content">
-          <div className="control-panel">
+        <CenteredHeader>
+          <h1>JJ 리서치 [부동산 시세 분석]</h1>
+        </CenteredHeader>
+        <CenteredContent>
+          <ControlPanel>
             <SearchBar 
               onSelect={handleApartmentSelect}
               loading={loading}
@@ -69,7 +96,7 @@ function App() {
               dateRange={dateRange}
               priceData={priceData}
             />
-          </div>
+          </ControlPanel>
           <div className="chart-container">
             <PriceChart 
               apartment={selectedApartment}
@@ -85,7 +112,7 @@ function App() {
               dateRange={dateRange}
             />
           </div>
-        </Content>
+        </CenteredContent>
       </Layout>
     </ConfigProvider>
   );
