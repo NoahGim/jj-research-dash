@@ -3,16 +3,23 @@ import { fetchSearchResults, fetchApartmentDetails } from '../services/api';
 import { Input, List } from 'antd';
 import styled from 'styled-components';
 
-// 스크롤 가능한 리스트 컨테이너 스타일 추가
+const SearchContainer = styled.div`
+  position: relative;
+  width: 300px;
+`;
+
 const ScrollableList = styled.div`
-  max-height: 120px; // 3개의 아이템이 보이도록 설정
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+  max-height: 120px;
   overflow-y: auto;
   background: white;
   border: 1px solid #e8e8e8;
   border-radius: 4px;
   margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   
-  // 스크롤바 스타일링
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -34,33 +41,20 @@ const ScrollableList = styled.div`
 function SearchBar({ onSelect, loading, setLoading }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async () => {
     setLoading(true);
+    setIsSearching(true);
     try {
-      console.log('Search query:', query);
       const response = await fetchSearchResults(query);
-      console.log('Search response:', response);
-      
-      // response가 배열이므로 첫 번째 요소를 사용
       const searchData = response[0];
-      // if (!searchData?.dataBody?.data) {
-      //   console.log('No data found');
-      //   setResults([]);
-      //   return;
-      // }
-
       const dataArray = searchData.COL_AT_HSCM;
-      console.log('Data array:', dataArray);
-
-      const formattedResults = dataArray
-        .map(item => ({
-          text: item.text,
-          address: item.addr,
-          displayName: item.textTemp
-        }));
-      
-      console.log('Formatted results:', formattedResults);
+      const formattedResults = dataArray.map(item => ({
+        text: item.text,
+        address: item.addr,
+        displayName: item.textTemp
+      }));
       setResults(formattedResults);
     } catch (error) {
       console.error('Error fetching search results:', error);
@@ -72,14 +66,18 @@ function SearchBar({ onSelect, loading, setLoading }) {
 
   const handleSelect = async (result) => {
     setLoading(true);
+    setIsSearching(false);
     try {
       const details = await fetchApartmentDetails(result.displayName);
       const complexData = details.dataBody.data.data.HSCM.data[0];
-      onSelect({
+      const apartmentData = {
         complexNo: complexData.COMPLEX_NO,
         apartmentName: complexData.HSCM_NM,
         address: complexData.BUBADDR,
-      });
+      };
+      onSelect(apartmentData);
+      setQuery(result.displayName);
+      setResults([]);
     } catch (error) {
       console.error('Error fetching apartment details:', error);
     } finally {
@@ -88,16 +86,18 @@ function SearchBar({ onSelect, loading, setLoading }) {
   };
 
   return (
-    <div className="search-bar">
+    <SearchContainer>
       <Input.Search
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onSearch={handleSearch}
+        onFocus={() => setIsSearching(true)}
+        onBlur={() => setTimeout(() => setIsSearching(false), 200)}
         placeholder="아파트 이름을 입력하세요"
         loading={loading}
         enterButton
       />
-      {results.length > 0 && (
+      {isSearching && results.length > 0 && (
         <ScrollableList>
           <List
             size="small"
@@ -108,11 +108,10 @@ function SearchBar({ onSelect, loading, setLoading }) {
                 style={{ 
                   cursor: 'pointer',
                   padding: '8px 12px',
-                  transition: 'background-color 0.3s',
-                  '&:hover': {
-                    backgroundColor: '#f5f5f5'
-                  }
+                  transition: 'background-color 0.3s'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 {result.displayName}
               </List.Item>
@@ -120,7 +119,7 @@ function SearchBar({ onSelect, loading, setLoading }) {
           />
         </ScrollableList>
       )}
-    </div>
+    </SearchContainer>
   );
 }
 
