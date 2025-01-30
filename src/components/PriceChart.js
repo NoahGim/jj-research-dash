@@ -63,30 +63,35 @@ function PriceChart({ apartment, type, dateRange, onDataUpdate }) {
   }, [apartment, type, dateRange, onDataUpdate]);
 
   return (
-    <Card title="가격 추이">
+    // <Card title="가격 추이">
+    <Card>
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '50px' }}>
+        <div style={{ title: '가격 추이', textAlign: 'center', padding: '50px' }}>
           <Spin size="large" />
         </div>
       ) : chartData.length > 0 ? (
-        <div style={{ width: '100%', height: 400 }}>
+        <div style={{ title: '가격 추이', width: '100%', height: 400 }}>
           <ResponsiveContainer>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 
                 type="category"
-                label={{ value: '날짜', position: 'bottom' }}
+                label={{ value: '날짜', position: 'left' }}
               />
               <YAxis 
                 label={{ 
-                  value: '가격 (만원)', 
+                  value: '가격 (억)', 
                   angle: -90, 
                   position: 'insideLeft'
                 }}
+                tickFormatter={(value) => (value / 10000).toFixed(2)}
               />
               <Tooltip />
-              <Legend />
+              <Legend 
+                verticalAlign="top"
+                height={36}
+              />
               <Line 
                 type="monotone" 
                 dataKey="매매가" 
