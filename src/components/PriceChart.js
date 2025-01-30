@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Spin, Button } from 'antd';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea } from 'recharts';
 import dayjs from 'dayjs';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 
 /**
  * @typedef {Object} ChartDataType
@@ -26,8 +27,25 @@ function PriceChart({ loading, data }) {
     refAreaRight: '',
     top: null,
     bottom: 0,
-    animation: true
+    animation: true,
+    history: [],        // 줌 히스토리 저장
+    historyIndex: -1    // 현재 히스토리 위치
   });
+
+  // data가 변경될 때 히스토리 초기화
+  useEffect(() => {
+    setZoomState(prev => ({
+      ...prev,
+      left: null,
+      right: null,
+      refAreaLeft: '',
+      refAreaRight: '',
+      top: null,
+      bottom: 0,
+      history: [],
+      historyIndex: -1
+    }));
+  }, [data]);
 
   // Y축 도메인 계산 함수 수정
   const getAxisYDomain = (from, to) => {
@@ -41,6 +59,48 @@ function PriceChart({ loading, data }) {
     return [0, maxValue + buffer];
   };
 
+  // 히스토리에 현재 상태 저장하는 함수
+  const saveToHistory = (newState) => {
+    const newHistory = zoomState.history.slice(0, zoomState.historyIndex + 1);
+    newHistory.push({
+      left: newState.left,
+      right: newState.right,
+      top: newState.top,
+      bottom: newState.bottom
+    });
+    
+    return {
+      ...newState,
+      history: newHistory,
+      historyIndex: newHistory.length - 1
+    };
+  };
+
+  // 뒤로 가기
+  const handleUndo = () => {
+    if (zoomState.historyIndex > 0) {
+      const prevState = zoomState.history[zoomState.historyIndex - 1];
+      setZoomState({
+        ...zoomState,
+        ...prevState,
+        historyIndex: zoomState.historyIndex - 1
+      });
+    }
+  };
+
+  // 앞으로 가기
+  const handleRedo = () => {
+    if (zoomState.historyIndex < zoomState.history.length - 1) {
+      const nextState = zoomState.history[zoomState.historyIndex + 1];
+      setZoomState({
+        ...zoomState,
+        ...nextState,
+        historyIndex: zoomState.historyIndex + 1
+      });
+    }
+  };
+
+  // zoom 함수 수정
   const zoom = () => {
     let { refAreaLeft, refAreaRight } = zoomState;
     
@@ -53,19 +113,15 @@ function PriceChart({ loading, data }) {
       return;
     }
 
-    // 확대 영역이 반대 방향인 경우 처리
     if (refAreaLeft > refAreaRight) {
       [refAreaLeft, refAreaRight] = [refAreaRight, refAreaLeft];
     }
 
-    // 데이터 인덱스 찾기
     const leftIndex = data.findIndex(item => item.date === refAreaLeft);
     const rightIndex = data.findIndex(item => item.date === refAreaRight);
-
-    // Y축 도메인 계산
     const [bottom, top] = getAxisYDomain(leftIndex, rightIndex);
 
-    setZoomState({
+    const newState = {
       ...zoomState,
       refAreaLeft: '',
       refAreaRight: '',
@@ -73,11 +129,14 @@ function PriceChart({ loading, data }) {
       right: refAreaRight,
       bottom,
       top
-    });
+    };
+
+    setZoomState(saveToHistory(newState));
   };
 
+  // zoomOut 함수 수정
   const zoomOut = () => {
-    setZoomState({
+    const newState = {
       ...zoomState,
       left: null,
       right: null,
@@ -85,7 +144,8 @@ function PriceChart({ loading, data }) {
       refAreaRight: '',
       top: null,
       bottom: 0
-    });
+    };
+    setZoomState(saveToHistory(newState));
   };
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -112,6 +172,12 @@ function PriceChart({ loading, data }) {
     return null;
   };
 
+  // 필터링된 데이터를 변수로 추출
+  const filteredData = data ? data.filter(item => 
+    (!zoomState.left || item.date >= zoomState.left) && 
+    (!zoomState.right || item.date <= zoomState.right)
+  ) : [];
+
   return (
     <Card>
       {loading ? (
@@ -123,7 +189,7 @@ function PriceChart({ loading, data }) {
           <div style={{ width: '100%', height: 400 }}>
             <ResponsiveContainer>
               <LineChart
-                data={data}
+                data={filteredData}
                 onMouseDown={e => e && setZoomState({ ...zoomState, refAreaLeft: e.activeLabel })}
                 onMouseMove={e => e && zoomState.refAreaLeft && setZoomState({ ...zoomState, refAreaRight: e.activeLabel })}
                 onMouseUp={zoom}
@@ -134,9 +200,27 @@ function PriceChart({ loading, data }) {
                   dataKey="date"
                   type="category"
                   allowDataOverflow={true}
-                  domain={[zoomState.left || 'dataMin', zoomState.right || 'dataMax']}
+                  domain={['auto', 'auto']}
                   scale="point"
+                  interval="preserveEnd"
                   label={{ value: '날짜', position: 'bottom' }}
+                  ticks={filteredData.map(item => item.date)}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                  tickFormatter={(value) => {
+                    const date = dayjs(value);
+                    const currentIndex = filteredData.findIndex(item => item.date === value);
+                    const prevDate = currentIndex > 0 ? filteredData[currentIndex - 1].date : null;
+                    
+                    // 첫 데이터이거나 마지막 데이터이거나 연도가 바뀌는 경우에 연도를 포함
+                    if (currentIndex === 0 || 
+                        currentIndex === filteredData.length - 1 || 
+                        (!prevDate || dayjs(prevDate).year() !== date.year())) {
+                      return date.format('YYYY-MM');
+                    }
+                    return date.format('MM');
+                  }}
                 />
                 <YAxis
                   domain={[
@@ -185,7 +269,7 @@ function PriceChart({ loading, data }) {
           </div>
           <div style={{ textAlign: 'center', marginTop: '10px' }}>
             <Button 
-              onClick={zoomOut} 
+              onClick={zoomOut}
               disabled={!zoomState.left && !zoomState.right}
               type="primary"
             >
