@@ -1,6 +1,35 @@
 import React, { useState } from 'react';
 import { fetchSearchResults, fetchApartmentDetails } from '../services/api';
 import { Input, List } from 'antd';
+import styled from 'styled-components';
+
+// 스크롤 가능한 리스트 컨테이너 스타일 추가
+const ScrollableList = styled.div`
+  max-height: 120px; // 3개의 아이템이 보이도록 설정
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  margin-top: 4px;
+  
+  // 스크롤바 스타일링
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+`;
 
 function SearchBar({ onSelect, loading, setLoading }) {
   const [query, setQuery] = useState('');
@@ -68,18 +97,29 @@ function SearchBar({ onSelect, loading, setLoading }) {
         loading={loading}
         enterButton
       />
-      <List
-        size="small"
-        dataSource={results}
-        renderItem={(result) => (
-          <List.Item 
-            onClick={() => handleSelect(result)}
-            style={{ cursor: 'pointer' }}
-          >
-            {result.displayName}
-          </List.Item>
-        )}
-      />
+      {results.length > 0 && (
+        <ScrollableList>
+          <List
+            size="small"
+            dataSource={results}
+            renderItem={(result) => (
+              <List.Item 
+                onClick={() => handleSelect(result)}
+                style={{ 
+                  cursor: 'pointer',
+                  padding: '8px 12px',
+                  transition: 'background-color 0.3s',
+                  '&:hover': {
+                    backgroundColor: '#f5f5f5'
+                  }
+                }}
+              >
+                {result.displayName}
+              </List.Item>
+            )}
+          />
+        </ScrollableList>
+      )}
     </div>
   );
 }
