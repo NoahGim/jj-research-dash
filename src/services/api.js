@@ -39,7 +39,7 @@ export const fetchSearchResults = async (query) => {
         검색키워드: query
       }
     });
-    console.log(JSON.stringify(response.data, null, 2));
+    // console.log(JSON.stringify(response.data, null, 2));
     return response.data.dataBody.data;
   } catch (error) {
     console.error('Error fetching search results:', error);
@@ -58,7 +58,7 @@ export const fetchApartmentDetails = async (query) => {
         페이지설정값: 1
       }
     });
-    console.log(JSON.stringify(response.data, null, 2));
+    // console.log(JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (error) {
     console.error('Error fetching apartment details:', error);
@@ -74,7 +74,7 @@ export const fetchApartmentTypes = async (complexNo) => {
         단지기본일련번호: complexNo
       }
     });
-    console.log(JSON.stringify(response.data, null, 2));
+    // console.log(JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (error) {
     console.error('Error fetching apartment types:', error);
@@ -95,7 +95,7 @@ export const fetchPriceChartData = async (complexNo, areaNo, startDate, endDate)
         조회종료일: endDate
       }
     });
-    console.log(JSON.stringify(response.data, null, 2));
+    // console.log(JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (error) {
     console.error('Error fetching price chart data:', error);
