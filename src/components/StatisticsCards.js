@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Row, Col, Card, Statistic, Spin } from 'antd';
 import { fetchPriceChartData } from '../services/api';
 // import dayjs from 'dayjs';
@@ -20,67 +20,7 @@ import { fetchPriceChartData } from '../services/api';
  * @param {string} [props.type] - 타입
  * @param {[import('dayjs').Dayjs, import('dayjs').Dayjs]} [props.dateRange] - 날짜 범위
  */
-function StatisticsCards({ apartment, type, dateRange }) {
-  const [loading, setLoading] = useState(false);
-  /** @type {[Statistics | null, React.Dispatch<React.SetStateAction<Statistics | null>>]} */
-  const [stats, setStats] = useState(null);
-
-  useEffect(() => {
-    let mounted = true; // 컴포넌트 마운트 상태를 추적
-
-    /**
-     * 통계 데이터를 계산하는 함수
-     * @returns {Promise<void>}
-     */
-    const calculateStats = async () => {
-      if (apartment?.complexNo && type && dateRange?.[0] && dateRange?.[1]) {
-        setLoading(true);
-        try {
-          /** @type {import('../types/api').ApartmentDetailsResponse} */
-          const response = await fetchPriceChartData(
-            apartment.complexNo,
-            type,
-            dateRange[0].format('YYYYMMDD'),
-            dateRange[1].format('YYYYMMDD')
-          );
-
-          // 컴포넌트가 마운트된 상태일 때만 상태 업데이트
-          if (mounted) {
-            const allPrices = response.dataBody.data.시세.flatMap(yearData => 
-              yearData.items.map(item => ({
-                매매가: item.매매일반거래가,
-                전세가: item.전세일반거래가
-              }))
-            );
-
-            const stats = {
-              avgSalePrice: calculateAverage(allPrices.map(item => item.매매가)),
-              avgJeonsePrice: calculateAverage(allPrices.map(item => item.전세가)),
-              maxSalePrice: Math.max(...allPrices.map(item => item.매매가)),
-              minSalePrice: Math.min(...allPrices.map(item => item.매매가)),
-              jeonseRatio: calculateJeonseRatio(allPrices)
-            };
-            
-            setStats(stats);
-          }
-        } catch (error) {
-          console.error('Error calculating statistics:', error);
-        } finally {
-          if (mounted) {
-            setLoading(false);
-          }
-        }
-      }
-    };
-
-    calculateStats();
-
-    // cleanup 함수
-    return () => {
-      mounted = false; // 컴포넌트 언마운트 시 플래그를 false로 설정
-    };
-  }, [apartment, type, dateRange]);
-
+function StatisticsCards({ loading, data }) {
   /**
    * 평균값을 계산하는 함수
    * @param {number[]} numbers - 계산할 숫자 배열
@@ -99,6 +39,20 @@ function StatisticsCards({ apartment, type, dateRange }) {
     const ratios = data.map(item => (item.전세가 / item.매매가) * 100);
     return calculateAverage(ratios);
   };
+
+  const calculateStats = useCallback(() => {
+    if (!data?.length) return null;
+
+    return {
+      avgSalePrice: calculateAverage(data.map(item => item.매매가)),
+      avgJeonsePrice: calculateAverage(data.map(item => item.전세가)),
+      maxSalePrice: Math.max(...data.map(item => item.매매가)),
+      minSalePrice: Math.min(...data.map(item => item.매매가)),
+      jeonseRatio: calculateJeonseRatio(data)
+    };
+  }, [data]);
+
+  const stats = calculateStats();
 
   if (loading) {
     return (

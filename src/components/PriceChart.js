@@ -19,60 +19,17 @@ import dayjs from 'dayjs';
  * @param {[import('dayjs').Dayjs, import('dayjs').Dayjs]} [props.dateRange] - 날짜 범위
  * @param {(data: ChartDataType[]) => void} props.onDataUpdate - 데이터 업데이트 콜백
  */
-function PriceChart({ apartment, type, dateRange, onDataUpdate }) {
-  const [loading, setLoading] = useState(false);
-  /** @type {[ChartDataType[], React.Dispatch<React.SetStateAction<ChartDataType[]>>]} */
-  const [chartData, setChartData] = useState([]);
-
-  useEffect(() => {
-    /**
-     * 차트 데이터를 가져오는 함수
-     * @returns {Promise<void>}
-     */
-    const fetchData = async () => {
-      if (apartment?.complexNo && type && dateRange?.[0] && dateRange?.[1]) {
-        setLoading(true);
-        try {
-          /** @type {import('../types/api').PriceChartResponse} */
-          const response = await fetchPriceChartData(
-            apartment.complexNo,
-            type,
-            dateRange[0].format('YYYYMMDD'),
-            dateRange[1].format('YYYYMMDD')
-          );
-          
-          const formattedData = response.dataBody.data.시세.flatMap(yearData => 
-            yearData.items.map(item => ({
-              date: dayjs(item.기준년월, 'YYYYMM').format('YYYY-MM-DD'),
-              매매가: item.매매일반거래가,
-              전세가: item.전세일반거래가
-            }))
-          );
-          
-          setChartData(formattedData);
-          onDataUpdate(formattedData);
-        } catch (error) {
-          console.error('Error fetching chart data:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-  }, [apartment, type, dateRange, onDataUpdate]);
-
+function PriceChart({ loading, data }) {
   return (
-    // <Card title="가격 추이">
     <Card>
       {loading ? (
-        <div style={{ title: '가격 추이', textAlign: 'center', padding: '50px' }}>
+        <div style={{ textAlign: 'center', padding: '50px' }}>
           <Spin size="large" />
         </div>
-      ) : chartData.length > 0 ? (
-        <div style={{ title: '가격 추이', width: '100%', height: 400 }}>
+      ) : data?.length > 0 ? (
+        <div style={{ width: '100%', height: 400 }}>
           <ResponsiveContainer>
-            <LineChart data={chartData}>
+            <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 

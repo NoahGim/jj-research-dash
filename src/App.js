@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Layout, ConfigProvider } from 'antd';
 import styled from 'styled-components';
 import SearchBar from './components/SearchBar';
@@ -7,6 +7,7 @@ import DateRangeSelector from './components/DateRangeSelector';
 import PriceChart from './components/PriceChart';
 import StatisticsCards from './components/StatisticsCards';
 import ExcelExport from './components/ExcelExport';
+import { fetchPriceChartData } from './services/api';
 import './styles/App.css';
 import dayjs from 'dayjs';
 import ko_KR from 'antd/es/locale/ko_KR';
@@ -49,7 +50,41 @@ function App() {
   const [selectedType, setSelectedType] = useState(null);
   const [dateRange, setDateRange] = useState([dayjs().subtract(1, 'year'), dayjs()]);
   const [loading, setLoading] = useState(false);
-  const [priceData, setPriceData] = useState(null);
+  const [chartData, setChartData] = useState(null);
+
+  // 차트 데이터 fetch 함수
+  const fetchChartData = useCallback(async () => {
+    if (!selectedApartment?.complexNo || !selectedType || !dateRange?.[0] || !dateRange?.[1]) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetchPriceChartData(
+        selectedApartment.complexNo,
+        selectedType,
+        dateRange[0].format('YYYYMMDD'),
+        dateRange[1].format('YYYYMMDD')
+      );
+      
+      const formattedData = response.dataBody.data.시세.flatMap(yearData => 
+        yearData.items.map(item => ({
+          date: dayjs(item.기준년월, 'YYYYMM').format('YYYY-MM-DD'),
+          매매가: item.매매일반거래가,
+          전세가: item.전세일반거래가
+        }))
+      );
+      
+      setChartData(formattedData);
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedApartment, selectedType, dateRange]);
+
+  // 데이터 fetch 실행
+  useEffect(() => {
+    fetchChartData();
+  }, [fetchChartData]);
 
   const handleApartmentSelect = useCallback((apartment) => {
     setSelectedApartment(apartment);
@@ -62,10 +97,6 @@ function App() {
 
   const handleDateChange = useCallback((dates) => {
     setDateRange(dates);
-  }, []);
-
-  const handleDataUpdate = useCallback((data) => {
-    setPriceData(data);
   }, []);
 
   return (
@@ -94,22 +125,18 @@ function App() {
               apartment={selectedApartment}
               type={selectedType}
               dateRange={dateRange}
-              priceData={priceData}
             />
           </ControlPanel>
           <div className="chart-container">
             <PriceChart 
-              apartment={selectedApartment}
-              type={selectedType}
-              dateRange={dateRange}
-              onDataUpdate={handleDataUpdate}
+              loading={loading}
+              data={chartData}
             />
           </div>
           <div className="statistics-container">
             <StatisticsCards 
-              apartment={selectedApartment}
-              type={selectedType}
-              dateRange={dateRange}
+              loading={loading}
+              data={chartData}
             />
           </div>
         </CenteredContent>
