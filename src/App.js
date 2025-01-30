@@ -48,22 +48,35 @@ const ControlPanel = styled.div`
 function App() {
   const [selectedApartment, setSelectedApartment] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
-  const [dateRange, setDateRange] = useState([dayjs().subtract(1, 'year'), dayjs()]);
+  const [dateRange, setDateRange] = useState(null);
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState(null);
+  const [fullChartData, setFullChartData] = useState(null);
 
   // 차트 데이터 fetch 함수
   const fetchChartData = useCallback(async () => {
-    if (!selectedApartment?.complexNo || !selectedType || !dateRange?.[0] || !dateRange?.[1]) return;
+    console.log('fetchChartData 실행:', { selectedApartment, selectedType });
+    
+    // 필수 데이터 체크
+    if (!selectedApartment?.complexNo || !selectedType) {
+      console.log('필수 데이터 없음');
+      setChartData(null);
+      setFullChartData(null);
+      setDateRange(null);
+      return;
+    }
     
     setLoading(true);
     try {
+      console.log('API 호출 시작');
       const response = await fetchPriceChartData(
         selectedApartment.complexNo,
         selectedType,
-        dateRange[0].format('YYYYMMDD'),
-        dateRange[1].format('YYYYMMDD')
+        '20000101',
+        dayjs().format('YYYYMMDD')
       );
+      
+      console.log('API 응답:', response);
       
       const formattedData = response.dataBody.data.시세.flatMap(yearData => 
         yearData.items.map(item => ({
@@ -71,33 +84,93 @@ function App() {
           매매가: item.매매일반거래가,
           전세가: item.전세일반거래가
         }))
-      );
+      ).sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf());
+
+      console.log('가공된 데이터:', formattedData);
+
+      setFullChartData(formattedData);
       
-      setChartData(formattedData);
+      // dateRange가 없는 경우 (초기 로드 또는 리셋된 경우)
+      if (!dateRange) {
+        console.log('dateRange 설정');
+        const dates = formattedData.map(item => dayjs(item.date));
+        // dayjs.min 대신 직접 최소/최대 날짜 찾기
+        const minDate = dates.reduce((min, curr) => 
+          curr.isBefore(min) ? curr : min, dates[0]
+        );
+        const maxDate = dates.reduce((max, curr) => 
+          curr.isAfter(max) ? curr : max, dates[0]
+        );
+        
+        setDateRange([minDate, maxDate]);
+        setChartData(formattedData);
+      } else {
+        console.log('데이터 필터링');
+        const filteredData = formattedData.filter(item => {
+          const itemDate = dayjs(item.date);
+          return itemDate.isAfter(dateRange[0]) && itemDate.isBefore(dateRange[1]);
+        });
+        setChartData(filteredData);
+      }
     } catch (error) {
       console.error('Error fetching chart data:', error);
+      setChartData(null);
+      setFullChartData(null);
     } finally {
       setLoading(false);
     }
-  }, [selectedApartment, selectedType, dateRange]);
+  }, [selectedApartment, selectedType]);
 
-  // 데이터 fetch 실행
-  useEffect(() => {
-    fetchChartData();
-  }, [fetchChartData]);
+  // 데이터 fetch 실행 - 이 useEffect는 더 이상 필요하지 않습니다
+  // useEffect(() => {
+  //   fetchChartData();
+  // }, [fetchChartData]);
 
+  // 아파트 선택 핸들러 수정
   const handleApartmentSelect = useCallback((apartment) => {
     setSelectedApartment(apartment);
-    setSelectedType(null);
+    setSelectedType(null);  // 아파트가 변경되면 타입 초기화
+    setChartData(null);    // 차트 데이터 초기화
+    setFullChartData(null); // 전체 데이터 초기화
+    setDateRange(null);    // 날짜 범위 초기화
   }, []);
 
+  // 타입 선택 핸들러 수정
   const handleTypeSelect = useCallback((type) => {
-    setSelectedType(type);
-  }, []);
+    console.log('타입 선택:', type);
+    if (type) {
+      setSelectedType(type);
+      // 상태 업데이트 후 다음 렌더링 사이클에서 실행
+      setTimeout(() => {
+        console.log('Delayed fetchChartData 호출, selectedType:', type);
+        fetchChartData();
+      }, 0);
+    } else {
+      setSelectedType(null);
+      setChartData(null);
+      setFullChartData(null);
+      setDateRange(null);
+    }
+  }, [fetchChartData]);
+
+  // 또는 useEffect를 사용하는 방법
+  useEffect(() => {
+    if (selectedType && selectedApartment) {
+      console.log('useEffect에서 fetchChartData 호출');
+      fetchChartData();
+    }
+  }, [selectedType, selectedApartment, fetchChartData]);
 
   const handleDateChange = useCallback((dates) => {
     setDateRange(dates);
-  }, []);
+    if (fullChartData && dates) {
+      const filteredData = fullChartData.filter(item => {
+        const itemDate = dayjs(item.date);
+        return itemDate.isAfter(dates[0]) && itemDate.isBefore(dates[1]);
+      });
+      setChartData(filteredData);
+    }
+  }, [fullChartData]);
 
   return (
     <ConfigProvider locale={ko_KR}>
@@ -132,6 +205,15 @@ function App() {
               loading={loading}
               data={chartData}
             />
+            {/* 디버깅용 데이터 상태 표시 */}
+            {process.env.NODE_ENV === 'development' && (
+              <div style={{ display: 'none' }}>
+                <p>Selected Type: {selectedType}</p>
+                <p>Chart Data Length: {chartData?.length}</p>
+                <p>Full Chart Data Length: {fullChartData?.length}</p>
+                <p>Date Range: {dateRange?.map(d => d?.format('YYYY-MM-DD')).join(' ~ ')}</p>
+              </div>
+            )}
           </div>
           <div className="statistics-container">
             <StatisticsCards 

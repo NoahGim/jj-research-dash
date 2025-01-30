@@ -34,7 +34,7 @@ function PriceChart({ loading, data }) {
               <XAxis 
                 dataKey="date" 
                 type="category"
-                label={{ value: '날짜', position: 'left' }}
+                label={{ value: '날짜', position: 'bottom' }}
               />
               <YAxis 
                 label={{ 
