@@ -60,7 +60,10 @@ function TypeSelector({ apartment, onSelect, selectedType }) {
   return (
     <StyledSelect
       style={{ width: 200 }}
-      onChange={onSelect}
+      onChange={(value) => {
+        const selectedTypeInfo = types.find(t => t.면적일련번호 === value);
+        onSelect(value, selectedTypeInfo);  // 선택된 타입의 전체 정보도 함께 전달
+      }}
       value={selectedType}
       loading={loading}
       disabled={!apartment || loading}

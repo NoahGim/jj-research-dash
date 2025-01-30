@@ -20,7 +20,16 @@ import dayjs from 'dayjs';
  */
 function ExcelExport({ apartment, type, dateRange, priceData }) {
   const handleExport = () => {
+    // 디버깅을 위한 로그 추가
+    console.log('ExcelExport props:', { apartment, type, dateRange, priceData });
+
     if (!apartment || !type || !dateRange || !priceData) {
+      console.log('Export disabled due to missing data:', { 
+        hasApartment: !!apartment, 
+        hasType: !!type, 
+        hasDateRange: !!dateRange, 
+        hasPriceData: !!priceData 
+      });
       return;
     }
 
@@ -32,8 +41,8 @@ function ExcelExport({ apartment, type, dateRange, priceData }) {
       // 헤더 정보
       ['아파트 정보'],
       ['단지명', apartment.displayName],
-      ['선택 평형', `${type.전용면적}㎡`],
-      ['조회 기간', `${dateRange[0].format('YYYY-MM-DD')} ~ ${dateRange[1].format('YYYY-MM-DD')}`],
+      ['평형', `${type.전용면적}㎡`],
+      ['조회 기간', `${dayjs(dateRange[0]).format('YYYY-MM-DD')} ~ ${dayjs(dateRange[1]).format('YYYY-MM-DD')}`],
       [], // 빈 줄
       // 통계 정보
       ['가격 통계'],
@@ -95,7 +104,7 @@ function ExcelExport({ apartment, type, dateRange, priceData }) {
     XLSX.utils.book_append_sheet(wb, chartWs, '차트데이터');
 
     // 파일 이름 생성
-    const fileName = `${apartment.displayName}_${dayjs().format('YYYYMMDD')}.xlsx`;
+    const fileName = `${apartment.apartmentName || apartment.displayName}_${type.전용면적}㎡_${dayjs().format('YYYYMMDD')}.xlsx`;
 
     // 엑셀 파일 다운로드
     XLSX.writeFile(wb, fileName);

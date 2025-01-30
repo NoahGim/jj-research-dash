@@ -48,6 +48,7 @@ const ControlPanel = styled.div`
 function App() {
   const [selectedApartment, setSelectedApartment] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
+  const [selectedTypeInfo, setSelectedTypeInfo] = useState(null);
   const [dateRange, setDateRange] = useState(null);
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState(null);
@@ -136,17 +137,18 @@ function App() {
   }, []);
 
   // 타입 선택 핸들러 수정
-  const handleTypeSelect = useCallback((type) => {
-    console.log('타입 선택:', type);
-    if (type) {
-      setSelectedType(type);
-      // 상태 업데이트 후 다음 렌더링 사이클에서 실행
+  const handleTypeSelect = useCallback((typeId, typeInfo) => {
+    console.log('타입 선택:', typeId, typeInfo);
+    if (typeId) {
+      setSelectedType(typeId);
+      setSelectedTypeInfo(typeInfo);
       setTimeout(() => {
-        console.log('Delayed fetchChartData 호출, selectedType:', type);
+        console.log('Delayed fetchChartData 호출, selectedType:', typeId);
         fetchChartData();
       }, 0);
     } else {
       setSelectedType(null);
+      setSelectedTypeInfo(null);
       setChartData(null);
       setFullChartData(null);
       setDateRange(null);
@@ -196,8 +198,9 @@ function App() {
             />
             <ExcelExport 
               apartment={selectedApartment}
-              type={selectedType}
+              type={selectedTypeInfo}
               dateRange={dateRange}
+              priceData={chartData}
             />
           </ControlPanel>
           <div className="chart-container">
